@@ -53,41 +53,64 @@ class DenseLayer():
 
         self.neurons = neurons
         input_dim = A_prev.shape()[1]
-        self.w = np.random.rand(input_dim, neurons)
+        self.W = np.random.rand(input_dim, neurons)
         self.b = np.zeros(shape=(1, neurons))
         self.dw = 0
         self.dz = 0
         self.batch_size = 64
+        self.cache = {}
+        self.V_dW = np.zeros_like(self.W)
+        self.V_db = np.zeros_like(self.b)
 
     def forward(self, A_prev):
-        z = A_prev @ self.w1 + self.b1 # [B, first_layer]
-        if self.neurons == 10:
-            a = soft_max(z)
-        else :
-            a = relu(z)# [B, first_layer]
-        return a 
+        z = A_prev @ self.W + self.b # [B, first_layer]
+        self.cache['A_prev'] = A_prev 
+        return z 
 
-    def backward(self, A_prev = None, w_next = None, current_z = None, Y_true = None, Y_predicted = None, dz_next = None):
-        if self.neurons == 10:
-            self.dz = (Y_true - Y_predicted)/self.batch_size
-            self.dw = self.dz * A_prev
-            return self.dz
-        else:
+    def backward(self, learning_rate, w_next=None, beta = 0.9, current_z=None, Y_true=None, Y_predicted=None, dz_next=None, lambda_reg=0):
+        A_prev = self.cache["A_prev"]
 
+
+        if self.neurons == 10 : 
+            m = A_prev.shape[0]
+            self.dz = (Y_true - Y_predicted)/m
+        else : 
             self.dz = dz_next * w_next * relu_backward(current_z)
-            self.dw = self.dz * A_prev
-            return self.dz
+
+        
+        self.dw = self.dz * A_prev
+        self.db = np.sum(self.dz, axis=0, keepdims=True)
+
+        
+        self.dw = self.dz * A_prev
+        self.db = np.sum(self.dz, axis=0, keepdims=True)
+
+        # without lambda_reg ---> g(t) = grad(L(w)) ||| with lambda_reg ---> g(t) = grad(L(w) + ((lambda/m) * w))
+        if lambda_reg>0 :
+            self.dw += ((lambda_reg/m) * self.W)
+
+
+        self.dA_prev = self.dz @ self.W    
+
+        self.V_dW = (beta * self.V_dW) + ((1 - beta) * self.dW)
+        self.V_db = (beta * self.V_db) + ((1 - beta) * self.db)
+
+        self.W -= learning_rate * self.V_dW
+        self.b -= learning_rate * self.V_db
+
+        return self.dz
         
 
 
 class FeedForwardNeuralNetwork():
-    def __init__(self,layers ,batch_size = 32, num_classes = 10):
+    def __init__(self,layers, X, Y_ture, batch_size = 32, num_classes = 10):
         self.first_layer_neurons = layers[0]
         self.second_layer_neurons = layers[1]
         self.num_classes = num_classes
         self.w1 = np.random.randn(784, self.first_layer_neurons)
         self.b1 = np.zeros(shape=(1,self.first_layer_neurons))
-
+        self.Y_true = Y_ture
+        self.X = X
 
         if layers[1] is not None :
             second_layer_neurons = layers[1]
@@ -108,33 +131,18 @@ class FeedForwardNeuralNetwork():
     def forward(self, X):
 
         self.layer_1 = DenseLayer(A_prev = X, neurons = self.first_layer_neurons)
-        self.A_1 = self.layer_1.forward(A_prev = X)
+        self.A_1, self.Z1 = self.layer_1.forward(A_prev = X)
         self.layer_2 = DenseLayer(A_prev = self.A_1, neurons = self.second_layer_neurons)
-        self.A_2 = self.layer_2.forward(A_prev = self.A_1)
+        self.A_2, self.Z2 = self.layer_2.forward(A_prev = self.A_1)
         self.out_put_layer = DenseLayer(A_prev = self.A_2, neurons = self.num_classes)
         self.y_predicted = self.out_put_layer.forward(A_prev = self.A_2)
         
         
-        
-
-
-        # # Xw + b = z(1)
-        # # Z(1)w + b = z(2)
-
-        # z_1 = X @ self.w1 + self.b1 # [B, first_layer]
-        # a_1 = relu(z_1) # [B, first_layer]
-        # if self.w2 is not None :
-        #     z_2 = a_1 @ self.w2 + self.b2 # [B, second_layer]
-        #     a_2 = relu(z_2)
-            
-        #     last_z = a_2 @ self.last_w + self.last_b #[B, num_classes]
-        #     predicted_class = soft_max(last_z)
-        # else :
-        #     last_z = a_1 @ self.last_w + self.last_b #[B, num_classes]
-        #     predicted_class = soft_max(last_z)
-
         return self.y_predicted  
 
 
     def backward(self):
-        dz_last = self.out_put_layer.backward(self,  A_prev = self.A_2, Y_true = None, Y_predicted = self.y_predicted)
+        dz_last, dw_last = self.out_put_layer.backward(self,  A_prev = self.A_2, Y_true = self.Y_true, Y_predicted = self.y_predicted)
+        dz_2, dw_2 =  self.out_put_layer.backward(self, A_prev = self.A_1, w_next = self.last_w, current_z = self.Z2, dz_next = dz_last)
+        dz_1, dw_1 =  self.out_put_layer.backward(self, A_prev = self.X, w_next = self.w2, current_z = self.Z1, dz_next = dz_2)
+        return dw_last, dw_2, dw_1
