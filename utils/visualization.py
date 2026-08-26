@@ -88,6 +88,45 @@ def plot_class_distribution(y, title="Class Distribution in Dataset"):
 
     # print("class_proportion : ", class_proportion)
     
+def plot_training_history(history, save_path=None):
+    """
+    Plots the training and validation loss and accuracy curves over epochs.
+
+    Args:
+        history (dict): The training history returned by the train_model function.
+        save_path (str, optional): If provided, saves the plot to this path. Defaults to None.
+    """
+    epochs = range(1, len(history['train_loss']) + 1)
     
+    plt.figure(figsize=(14, 5))
     
+    # Plot Loss
+    plt.subplot(1, 2, 1)
+    plt.plot(epochs, history['train_loss'], label='Train Loss', color='blue')
+    plt.plot(epochs, history['val_loss'], label='Validation Loss', color='red', linestyle='--')
+    plt.title('Cross-Entropy Loss over Epochs')
+    plt.xlabel('Epochs')
+    plt.ylabel('Loss')
+    plt.legend()
+    plt.grid(True, linestyle=':', alpha=0.6)
+    
+    # Plot Accuracy
+    plt.subplot(1, 2, 2)
+    plt.plot(epochs, history['train_acc'], label='Train Accuracy', color='blue')
+    plt.plot(epochs, history['val_acc'], label='Validation Accuracy', color='red', linestyle='--')
+    plt.title('Classification Accuracy over Epochs')
+    plt.xlabel('Epochs')
+    plt.ylabel('Accuracy')
+    plt.legend()
+    plt.grid(True, linestyle=':', alpha=0.6)
+    
+    plt.tight_layout()
+    
+    if save_path:
+        plt.savefig(save_path, dpi=300, bbox_inches='tight')
+        print(f"Plot saved to {save_path}")
+    
+    plt.show()
+
+
 
