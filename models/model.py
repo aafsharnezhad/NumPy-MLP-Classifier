@@ -1,165 +1,4 @@
-# import numpy as np 
 
-
-# def relu(x):
-#     return np.maximum(0, x)  
-
-# def soft_max(Z): 
-    
-#     expZ = np.exp(Z - np.max(Z, axis=1, keepdims=True))
-#     predictions = expZ / np.sum(expZ, axis=1, keepdims=True)
-
-#     return predictions
-
-
-  
-# def cross_entropy_loss(y_pred, y_true):
-#     # Extracting Batch Size
-#     B = y_pred.shape[0]
-
-#     epsilon = 1e-4
-#     y_pred = np.clip(y_pred, epsilon, 1.0 - epsilon)
-
-#     ## The Loss will be a (B * 10) matrix 
-#     loss = -1/B * (np.sum(y_true * (np.log(y_pred))))
-#     return loss    
-
-
-# def compute_total_loss(): 
-#     pass   
-
-# def relu_backward(Z):
-#     return (Z>0).astype(float)
-
-
-
-# class DenseLayer():
-#     def __init__(self,input_dim, neurons):
-
-#         self.neurons = neurons
-        
-#         self.W = np.random.rand(input_dim, neurons)
-#         self.b = np.zeros(shape=(1, neurons))
-#         self.dW = 0
-#         self.dz = 0
-        
-#         self.cache = {}
-#         self.V_dW = np.zeros_like(self.W)
-#         self.V_db = np.zeros_like(self.b)
-
-
-#     def forward(self, A_prev):
-#         z = A_prev @ self.W + self.b # [B, first_layer]
-#         self.cache['current_z'] = z
-#         self.cache['A_prev'] = A_prev 
-#         return z 
-
-
-#     def backward(self, learning_rate, w_next=None, beta = 0.9, current_z=None, Y_true=None, Y_predicted=None, dz_next=None, lambda_reg=0):
-#         A_prev = self.cache["A_prev"]
-
-
-#         if self.neurons == 10 : 
-#             m = A_prev.shape[0]
-#             self.dz = (Y_true - Y_predicted)/m
-#         else : 
-#             self.dz = (dz_next @ w_next.T) * relu_backward(current_z)
-
-        
-#         self.dW = A_prev.T @ self.dz
-#         self.db = np.sum(self.dz, axis=0, keepdims=True)
-
-        
-      
-
-#         # without lambda_reg ---> g(t) = grad(L(w)) ||| with lambda_reg ---> g(t) = grad(L(w) + ((lambda/m) * w))
-#         if lambda_reg>0 :
-#             self.dw += ((lambda_reg/m) * self.W)
-
-
-#         self.dA_prev = self.dz @ self.W.T   
-
-#         self.V_dW = (beta * self.V_dW) + ((1 - beta) * self.dW)
-#         self.V_db = (beta * self.V_db) + ((1 - beta) * self.db)
-
-#         self.W -= learning_rate * self.V_dW
-#         self.b -= learning_rate * self.V_db
-
-#         return self.dz
-        
-
-
-# class MLP():
-#     def __init__(self,layers, X, batch_size = 32, num_classes = 10):
-#         self.first_layer_neurons = layers[0]
-
-
-#         # self.y_true = Y_ture 
-#         self.num_classes = num_classes
-
-#         self.model_layers = []
-
-
-#         ### example : layers = [16,32] ----> model_layers = [DenseLayer, Dense_layer, Dense_layer]
-#         for i in range(len(layers)) : 
-#             if i == 0 :
-#                 input_dim = 784
-#             else : 
-#                 input_dim = layers[i-1]    
-
-#             self.model_layers.append(DenseLayer(input_dim=input_dim , neurons = layers[i]))
-#         # Creating Last hidden Layer    
-#         self.model_layers.append(DenseLayer(input_dim=layers[-1], neurons=num_classes))
-
- 
-
-#         self.X = X
-
-   
-            
-
-            
-#     def forward(self, X):
-
-#         A_prev = X
-#         for i in range(len(self.model_layers) - 1):
-#            layer =  self.model_layers[i]
-#            Z = layer.forward(A_prev = A_prev)
-#            A = relu(Z)
-#            A_prev = A
-
-#         layer = self.model_layers[-1]
-#         Z_out = layer.forward(A_prev = A_prev)
-#         A_out = soft_max(Z_out)   
-        
-#         y_predicted = A_out
-         
-        
-#         return y_predicted  
-
-
-#     def backward(self, learning_rate, y_true, y_predicted):
-#         last_layer = self.model_layers[-1]
-        
-#         dZ = last_layer.backward(learning_rate, w_next=None, beta = 0.9, current_z=None, Y_true=y_true, Y_predicted=y_predicted, dz_next=None, lambda_reg=0)
-#         w_next = last_layer.W
-#         dz_next = dZ
-
-#         for i in reversed(range(len(self.model_layers)-1)):
-#             layer = self.model_layers[i]
-#             current_z = layer.cache['current_z']
-#             dZ = layer.backward(learning_rate, w_next=w_next, beta = 0.9, current_z=current_z, Y_true=None, Y_predicted=None, dz_next=dz_next, lambda_reg=0)
-#             w_next = layer.W
-#             dz_next = dZ
-
-
-"""
-NumPy-based Multi-Layer Perceptron (MLP) Implementation.
-
-This module contains the necessary components to build, propagate, and train
-a fully connected feedforward neural network from scratch using NumPy. It includes
-activation functions, loss calculations, and layer-specific forward/backward logic.
-"""
 
 import numpy as np 
 
@@ -321,13 +160,13 @@ class DenseLayer():
             # Simplified gradient calculation for Softmax + Cross-Entropy output layer
             m = A_prev.shape[0]
             self.dz = (Y_predicted - Y_true) / m 
-            # Note: Changed from (Y_true - Y_predicted) to (Y_predicted - Y_true) 
-            # for standard gradient descent subtraction direction.
+             
+            
         else: 
             # Standard hidden layer backpropagation chain rule
             self.dz = (dz_next @ w_next.T) * relu_backward(current_z)
 
-        # 1. Calculate Gradients for Weights and Biases
+        # Calculate Gradients for Weights and Biases
         self.dW = A_prev.T @ self.dz
         
         # Sum across the batch dimension to maintain correct bias shape (1, neurons)
